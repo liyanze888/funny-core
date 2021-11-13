@@ -20,14 +20,14 @@ func CreateInterceptors() (grpc.ServerOption, grpc.ServerOption) {
 	return creator.Unaries, creator.Streams
 }
 
-func (i *ServerInterceptorCreator) CreateUnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) {
+func CreateUnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) {
 	//recoveryHandlerOption := recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 	//	debug.PrintStack()
 	//	err = fmt.Errorf("panic: %v", p)
 	//	return
 	//})
 
-	i.Unaries = grpc.UnaryInterceptor(middleware.ChainUnaryServer(
+	creator.Unaries = grpc.UnaryInterceptor(middleware.ChainUnaryServer(
 		//prometheus.UnaryServerInterceptor,
 		//recovery.UnaryServerInterceptor(recoveryHandlerOption),
 		interceptors...,
@@ -41,7 +41,7 @@ func (i *ServerInterceptorCreator) CreateStreamInterceptors(interceptors ...grpc
 	//	return
 	//})
 	//
-	i.Streams = grpc.StreamInterceptor(middleware.ChainStreamServer(
+	creator.Streams = grpc.StreamInterceptor(middleware.ChainStreamServer(
 		//prometheus.StreamServerInterceptor,
 		//recovery.StreamServerInterceptor(recoveryHandlerOption),
 		//StreamLogServerInterceptor(),
