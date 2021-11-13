@@ -13,7 +13,10 @@ type ServerInterceptorCreator struct {
 }
 
 func NewServerInterceptorCreator() *ServerInterceptorCreator {
-	return &ServerInterceptorCreator{}
+	return &ServerInterceptorCreator{
+		Unaries: grpc.EmptyServerOption{},
+		Streams: grpc.EmptyServerOption{},
+	}
 }
 
 func CreateInterceptors() (grpc.ServerOption, grpc.ServerOption) {
