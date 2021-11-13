@@ -25,7 +25,6 @@ func init() {
 }
 
 type InitialGrpcWorker struct {
-	//InterceptorCreator *grpc_interceptor_server.ServerInterceptorCreator `autowire:""`
 	grpcServer *grpc.Server
 }
 

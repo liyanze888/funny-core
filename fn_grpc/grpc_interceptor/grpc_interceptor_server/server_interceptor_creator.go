@@ -37,7 +37,7 @@ func CreateUnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) {
 	))
 }
 
-func (i *ServerInterceptorCreator) CreateStreamInterceptors(interceptors ...grpc.StreamServerInterceptor) {
+func CreateStreamInterceptors(interceptors ...grpc.StreamServerInterceptor) {
 	//recoveryHandlerOption := recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 	//	debug.PrintStack()
 	//	err = fmt.Errorf("panic: %v", p)
