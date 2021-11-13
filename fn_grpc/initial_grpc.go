@@ -62,7 +62,7 @@ func (i *InitialGrpcWorker) Start(port int) {
 	h2Handler := h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		defer wg.Done()
-		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/fn_grpc") {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
 			i.grpcServer.ServeHTTP(w, r)
 		} else {
 			httpMux.ServeHTTP(w, r)
