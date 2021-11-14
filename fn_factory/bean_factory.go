@@ -105,6 +105,44 @@ func (b *BeanFacotry) AutoWireBeans() error {
 	return nil
 }
 
+func (b *BeanFacotry) wiredMapDefinition(f reflect.StructField, v reflect.Value) {
+	if beanName, ok := f.Tag.Lookup("beanFiledName"); ok {
+		key := f.Type.Key()
+		definitions := b.FindBeanDefinitionsByType(f.Type.Elem())
+		if len(definitions) == 0 {
+			panic(fmt.Sprintf("not exists type bean = %v ", f.Type.Name()))
+		}
+		//反射创建出一个map
+		result := reflect.MakeMap(reflect.MapOf(key, f.Type.Elem()))
+
+		for _, definition := range definitions {
+			b.wireBeanByDefinition(definition)
+			vt := definition.Type.Elem()
+			_, exist := vt.FieldByName(beanName)
+			if !exist {
+				continue
+			}
+			switch key.Kind() {
+			case reflect.Int:
+				i := definition.Value.Elem().FieldByName(beanName).Int()
+				result.SetMapIndex(reflect.ValueOf(int(i)), definition.Value)
+			case reflect.Int32:
+				i := definition.Value.Elem().FieldByName(beanName).Int()
+				result.SetMapIndex(reflect.ValueOf(int(i)), definition.Value)
+			case reflect.Int64:
+				i := definition.Value.Elem().FieldByName(beanName).Int()
+				result.SetMapIndex(reflect.ValueOf(int(i)), definition.Value)
+			case reflect.String:
+				i := definition.Value.Elem().FieldByName(beanName).String()
+				result.SetMapIndex(reflect.ValueOf(i), definition.Value)
+			}
+		}
+		v.Set(result)
+	} else {
+		panic(fmt.Sprintf("not exists beanFieldName = %v", beanName))
+	}
+}
+
 // 绑定 BeanDefinition 指定的 Bean
 func (b *BeanFacotry) wireBeanByDefinition(beanDefinition *MyBeanDefinition) error {
 
@@ -124,13 +162,19 @@ func (b *BeanFacotry) wireBeanByDefinition(beanDefinition *MyBeanDefinition) err
 	// 遍历 SpringBean 所有的字段
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-
 		// 查找依赖绑定的标签
 		if beanName, ok := f.Tag.Lookup("autowire"); ok {
 			var definition *MyBeanDefinition
 			if len(beanName) > 0 {
 				definition = b.FindBeanDefinitionByName(beanName)
 			} else {
+				//如果 值是map
+				switch f.Type.Kind() {
+				case reflect.Map:
+					b.wiredMapDefinition(f, v.Field(i))
+					continue
+				default:
+				}
 				definitions := b.FindBeanDefinitionsByType(f.Type)
 				if len(definitions) > 0 {
 					definition = definitions[0]
