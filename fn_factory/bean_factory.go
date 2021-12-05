@@ -105,6 +105,16 @@ func (b *BeanFacotry) AutoWireBeans() error {
 	return nil
 }
 
+func (b *BeanFacotry) wiredSliceOrArrayDefinition(f reflect.StructField, v reflect.Value) {
+	definitions := b.FindBeanDefinitionsByType(f.Type.Elem())
+	result := reflect.Indirect(reflect.New(f.Type))
+
+	for _, def := range definitions {
+		result.Set(reflect.Append(result, def.Value))
+	}
+	v.Set(result)
+}
+
 func (b *BeanFacotry) wiredMapDefinition(f reflect.StructField, v reflect.Value) {
 	if beanName, ok := f.Tag.Lookup("beanFiledName"); ok {
 		key := f.Type.Key()
@@ -172,6 +182,9 @@ func (b *BeanFacotry) wireBeanByDefinition(beanDefinition *MyBeanDefinition) err
 				switch f.Type.Kind() {
 				case reflect.Map:
 					b.wiredMapDefinition(f, v.Field(i))
+					continue
+				case reflect.Slice, reflect.Array:
+					b.wiredSliceOrArrayDefinition(f, v.Field(i))
 					continue
 				default:
 				}
