@@ -28,11 +28,12 @@ type MyBeanPostInitialization interface {
 }
 
 type MyBeanDefinition struct {
-	Init  int
-	Bean  MyBean
-	Name  string
-	Type  reflect.Type
-	Value reflect.Value
+	Init    int
+	Bean    MyBean
+	Name    string
+	Type    reflect.Type
+	Value   reflect.Value
+	FtyBean FactoryBean
 }
 
 type BeanContext interface {
@@ -48,8 +49,13 @@ type BeanContext interface {
 }
 
 type BeanFacotry struct {
-	beans map[string]*MyBeanDefinition
+	beans        map[string]*MyBeanDefinition
+	factoryBeans map[string]*MyBeanDefinition
 	BeanContext
+}
+
+type FactoryBean interface {
+	RegisterFactoryBeans(b BeanContext)
 }
 
 func (b *BeanFacotry) StartUp() {
@@ -95,8 +101,17 @@ func (b *BeanFacotry) RegisterNameBean(name string, bean MyBean) {
 	b.registerBeanDefinition(name, bean, t, v)
 }
 
+func (b *BeanFacotry) initFactoryBeans() {
+	for _, bean := range b.factoryBeans {
+		if c, ok := bean.Bean.(FactoryBean); ok {
+			c.RegisterFactoryBeans(BeanFactory)
+		}
+	}
+}
+
 // 自动绑定所有的 Bean
 func (b *BeanFacotry) AutoWireBeans() error {
+	b.initFactoryBeans()
 	for _, beanDefinition := range b.beans {
 		if err := b.wireBeanByDefinition(beanDefinition); err != nil {
 			return err
@@ -276,6 +291,17 @@ func (b *BeanFacotry) FindBeanDefinitionsByType(t reflect.Type) []*MyBeanDefinit
 }
 
 func (b *BeanFacotry) registerBeanDefinition(name string, bean MyBean, t reflect.Type, v reflect.Value) {
+	if fb, ok := bean.(FactoryBean); ok {
+		b.factoryBeans[name] = &MyBeanDefinition{
+			Init:    Uninitialized,
+			Name:    name,
+			Bean:    bean,
+			Type:    t,
+			Value:   v,
+			FtyBean: fb,
+		}
+		return
+	}
 	b.beans[name] = &MyBeanDefinition{
 		Init:  Uninitialized,
 		Name:  name,
@@ -331,6 +357,7 @@ func getBeanType(bean MyBean) (t reflect.Type, v reflect.Value) {
 
 func newBeanFactory() BeanContext {
 	return &BeanFacotry{
-		beans: make(map[string]*MyBeanDefinition),
+		beans:        make(map[string]*MyBeanDefinition),
+		factoryBeans: make(map[string]*MyBeanDefinition),
 	}
 }
