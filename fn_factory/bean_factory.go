@@ -2,6 +2,7 @@ package fn_factory
 
 import (
 	"fmt"
+	"github.com/liyanze888/funny-core/fn_config"
 	"reflect"
 	"strings"
 )
@@ -37,6 +38,8 @@ type MyBeanDefinition struct {
 }
 
 type BeanContext interface {
+	RegisterConfigBean(bean MyBean)
+	RegisterConfigBeanByName(name string, bean MyBean)
 	RegisterBean(bean MyBean)
 	RegisterBeanByName(name string, bean MyBean)
 	AutoWireBeans() error
@@ -49,8 +52,10 @@ type BeanContext interface {
 }
 
 type BeanFacotry struct {
-	beans        map[string]*MyBeanDefinition
-	factoryBeans map[string]*MyBeanDefinition
+	beans           map[string]*MyBeanDefinition
+	factoryBeans    map[string]*MyBeanDefinition
+	configBeans     []MyBean
+	configNameBeans map[string]MyBean
 	BeanContext
 }
 
@@ -69,6 +74,14 @@ func (b *BeanFacotry) PostInitialization() {
 			c.PostInitilization()
 		}
 	}
+}
+
+func (b *BeanFacotry) RegisterConfigBean(bean MyBean) {
+	b.configBeans = append(b.configBeans, bean)
+
+}
+func (b *BeanFacotry) RegisterConfigBeanByName(name string, bean MyBean) {
+	b.configNameBeans[name] = bean
 }
 
 //注册bean
@@ -101,17 +114,36 @@ func (b *BeanFacotry) RegisterNameBean(name string, bean MyBean) {
 	b.registerBeanDefinition(name, bean, t, v)
 }
 
-func (b *BeanFacotry) initFactoryBeans() {
+//todo 继续优化 config 不进行二次初始化
+func (b *BeanFacotry) initConfigs() {
+	for _, bean := range b.configBeans {
+		fn_config.InitConfig(bean)
+		b.RegisterBean(bean)
+	}
+	for name, bean := range b.configNameBeans {
+		fn_config.InitConfig(bean)
+		b.RegisterBeanByName(name, bean)
+	}
+}
+
+func (b *BeanFacotry) initFactoryBeans() error {
 	for _, bean := range b.factoryBeans {
 		if c, ok := bean.Bean.(FactoryBean); ok {
+			if err := b.wireBeanByDefinition(bean); err != nil {
+				return err
+			}
 			c.RegisterFactoryBeans(BeanFactory)
 		}
 	}
+	return nil
 }
 
 // 自动绑定所有的 Bean
 func (b *BeanFacotry) AutoWireBeans() error {
-	b.initFactoryBeans()
+	b.initConfigs()
+	if err := b.initFactoryBeans(); err != nil {
+		return err
+	}
 	for _, beanDefinition := range b.beans {
 		if err := b.wireBeanByDefinition(beanDefinition); err != nil {
 			return err
@@ -357,7 +389,9 @@ func getBeanType(bean MyBean) (t reflect.Type, v reflect.Value) {
 
 func newBeanFactory() BeanContext {
 	return &BeanFacotry{
-		beans:        make(map[string]*MyBeanDefinition),
-		factoryBeans: make(map[string]*MyBeanDefinition),
+		beans:           make(map[string]*MyBeanDefinition),
+		factoryBeans:    make(map[string]*MyBeanDefinition),
+		configBeans:     make([]MyBean, 0),
+		configNameBeans: make(map[string]MyBean),
 	}
 }
