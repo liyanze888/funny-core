@@ -1,0 +1,44 @@
+robot:
+  userIdsStr:
+    - "hello"
+    - hello
+    - world
+  userIds:
+    - 1
+    - 2
+    - 3
+  userStatus:
+    - true
+    - false
+    - false
+
+
+RefTex:
+  Age1: 111
+  Age2: 111
+  Age3: 111
+
+
+RefTexBool:
+  Age1: true
+  Age2: false
+  Age3: true
+
+RefIntSlice:
+  Age1:
+    - 1
+    - 2
+RefTxtSlice:
+  Age1:
+    - user
+    - name
+
+RefBoolSlice:
+  Age1:
+    - true
+    - false
+
+
+
+Age: 1234
+Name: today

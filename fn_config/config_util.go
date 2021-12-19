@@ -4,18 +4,18 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"reflect"
-	"sync"
+	//"sync"
 )
 
 var confViper = viper.New()
-var once sync.Once
 
 var alreadyInitProperty = make(map[string]interface{})
 
 func InitConfig(cf interface{}) {
 	confViper.AutomaticEnv()
-	if _, err := os.Open("config.yaml"); err == nil {
-		confViper.SetConfigFile(getStringConfigOrDefault("config_file", "config.yaml"))
+	getwd, _ := os.Getwd()
+	if _, err := os.Open(getwd + "/config.yaml"); err == nil {
+		confViper.SetConfigFile(getStringConfigOrDefault("config_file", getwd+"/config.yaml"))
 		err = confViper.ReadInConfig()
 		if err != nil {
 			panic(err)
@@ -36,16 +36,33 @@ func initProperties(i interface{}) {
 		iVal = iVal.Elem()
 	}
 
+	prefix := ""
+	if tField, b := tType.FieldByName("prefix"); b {
+		if tVal, ok := tField.Tag.Lookup("value"); ok {
+			if tVal != "" {
+				prefix = tVal
+			}
+		}
+	}
 	fieldSize := tType.NumField()
 	for i := 0; i < fieldSize; i++ {
 		tField := tType.Field(i)
 		key := tField.Name
+
+		if key == "prefix" {
+			continue
+		}
 
 		if tVal, ok := tField.Tag.Lookup("value"); ok {
 			if tVal != "" {
 				key = tVal
 			}
 		}
+
+		if len(prefix) != 0 {
+			key = prefix + "." + key
+		}
+
 		vField := iVal.Field(i)
 		property := getProperty(key, tField)
 		if property != nil {
@@ -96,7 +113,12 @@ func getProperty(key string, field reflect.StructField) *reflect.Value {
 	case reflect.Bool:
 		ret := getBool(key, field)
 		return &ret
-
+	case reflect.Slice:
+		ret := getSlice(key, field)
+		return &ret
+	case reflect.Map:
+		ret := getMap(key, field)
+		return &ret
 	}
 	return nil
 }
