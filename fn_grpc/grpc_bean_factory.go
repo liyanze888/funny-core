@@ -4,7 +4,6 @@ import (
 	"github.com/liyanze888/funny-core/fn_factory"
 	"github.com/liyanze888/funny-core/fn_grpc/fn_grpc_config"
 	"github.com/liyanze888/funny-core/fn_log"
-	"log"
 	"reflect"
 )
 
@@ -36,13 +35,17 @@ func (g *grpcBeanFactory) StartUp() {
 		numParam := mType.NumIn()
 		params := make([]reflect.Value, 0, numParam)
 		for i := 0; i < numParam; i++ {
-			log.Printf("%v", mType.In(i))
-			log.Printf("%v", fn_factory.BeanFactory.FindBeanDefinitionsByType(mType.In(i)))
 			params = append(params, fn_factory.BeanFactory.FindBeanDefinitionsByType(mType.In(i))[0].Value)
 		}
 		mValue.Call(params)
 	}
-	g.GrpcWorker.Start(g.Config.Port)
+
+	if g.Config == nil {
+		g.GrpcWorker.Start(9000)
+	} else {
+		g.GrpcWorker.Start(g.Config.Port)
+	}
+
 }
 
 func (g *grpcBeanFactory) Register(registerMethod interface{}) {
